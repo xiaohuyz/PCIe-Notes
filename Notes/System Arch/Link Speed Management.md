@@ -1,0 +1,19 @@
+# Link Speed Management
+
+本节描述了Link Speed Management是如何在LTSSM和software link observation and control mechanisms之间互相协调的。
+
+其中，Downstream Port的Link Control 2 register中的target link speed field决定了Link speed的上限。而Upstream Port必须尝试将link维持在target link speed，或者维持在Link两端的component所支持的最高速率，这两个速率哪个越低则选择哪个。
+
+任何一个Upstream Port或者Downstream Port，如果Link Control 2 register中的Hardware Autonomous Speed Disable bit为0，则允许使用特定的与具体实现相关的准则来改变link speed
+
+如果link的可靠性不可接受地低，则link两端的任意component都允许通过将TS中advertise的list of supported speeds中的unreliable link speed去除，来降低link speed。决定可接受的link reliability的准则由具体实现决定，并且不依赖于Hardware Autonomous Speed Disable bit
+
+在一个给定速率的协商中，有可能link两端的一个或者所有components都advertise
+
+当一个component针对一个特定速率的协商失败之后，那个component不允许再次尝试协商那个speed，也不允许协商更高的speeed，直到上次协商失败，而后进入L0之后200ms，或者link另一端的component通过它的training set来advertise它支持更高的link speed
+
+软件允许通过设置upstream port中的target link speed field中的值，来限制link operation的最大速率，并且来设置preferred link speed。在修改了target link speed field中的值之后，软件允许通过将retrain link bit写1，来发起link retraining。同时，通过Link bandwidth notification机制，来告知软件link speed changes
+
+软件允许将link在特定速率下引导进入Polling.Compliance LTSSM，方法是将link两端的components中的Link Control 2 register的target link speed field写入相同的值，并且将enter Compliance bit设置为1，而后通过Downstream port在link上发起Hot reset
+
+注意，这将会使得link进入DL_Down state。当Enter Compliance bit被clear时，Downstream Port将会回到Polling.Active
